@@ -9,8 +9,9 @@ const state = {
 
 const localHosts = ["localhost", "127.0.0.1"];
 const isLocalHost = localHosts.includes(window.location.hostname);
-const configuredApiUrl = window.CHAT_API_URL || "";
-const API_BASE_URL = isLocalHost ? "" : configuredApiUrl.replace(/\/$/, "");
+const configuredApiUrl = (window.CHAT_API_URL || "").replace(/\/$/, "");
+const isBackendPreview = isLocalHost && window.location.port === "5000";
+const API_BASE_URL = isBackendPreview ? "" : isLocalHost ? "http://localhost:5000" : configuredApiUrl;
 
 const els = {
   authView: document.querySelector("#authView"),

@@ -1,5 +1,21 @@
+import dns from "dns";
 import mongoose from "mongoose";
 import User from "../models/User.js";
+
+const configureLocalSrvDns = (mongoUri) => {
+  if (!mongoUri.startsWith("mongodb+srv://") || process.env.NODE_ENV === "production") {
+    return;
+  }
+
+  const dnsServers = (process.env.DNS_SERVERS || "8.8.8.8,1.1.1.1")
+    .split(",")
+    .map((server) => server.trim())
+    .filter(Boolean);
+
+  if (dnsServers.length) {
+    dns.setServers(dnsServers);
+  }
+};
 
 const dropObsoleteUserIndexes = async () => {
   const indexes = await User.collection.indexes();
@@ -19,6 +35,7 @@ const connectDB = async () => {
       throw new Error("MONGODB_URI is missing from environment variables");
     }
 
+    configureLocalSrvDns(mongoUri);
     const connection = await mongoose.connect(mongoUri);
     await dropObsoleteUserIndexes();
     console.log(`MongoDB connected: ${connection.connection.host}`);

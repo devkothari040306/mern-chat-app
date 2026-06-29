@@ -25,12 +25,21 @@ const allowedOrigins = new Set([
   ...CLIENT_URLS,
 ]);
 
+const isLocalOrigin = (origin) => {
+  try {
+    const { hostname } = new URL(origin);
+    return hostname === "localhost" || hostname === "127.0.0.1";
+  } catch (error) {
+    return false;
+  }
+};
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const frontendPath = path.join(__dirname, "../frontend");
 
 const corsOrigin = (origin, callback) => {
-  if (!origin || allowedOrigins.has(origin)) {
+  if (!origin || allowedOrigins.has(origin) || isLocalOrigin(origin)) {
     return callback(null, true);
   }
 
