@@ -15,22 +15,38 @@ dotenv.config();
 const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
-const CLIENT_URL = process.env.CLIENT_URL || process.env.FRONTEND_URL || "http://localhost:5000";
+const CLIENT_URLS = (process.env.CLIENT_URL || process.env.FRONTEND_URL || "")
+  .split(",")
+  .map((url) => url.trim())
+  .filter(Boolean);
+const allowedOrigins = new Set([
+  "http://localhost:5000",
+  "http://127.0.0.1:5000",
+  ...CLIENT_URLS,
+]);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const frontendPath = path.join(__dirname, "../frontend");
 
+const corsOrigin = (origin, callback) => {
+  if (!origin || allowedOrigins.has(origin)) {
+    return callback(null, true);
+  }
+
+  return callback(new Error(`CORS blocked origin: ${origin}`));
+};
+
 const io = new Server(server, {
   cors: {
-    origin: CLIENT_URL,
+    origin: corsOrigin,
     credentials: true,
   },
 });
 
 app.use(
   cors({
-    origin: CLIENT_URL,
+    origin: corsOrigin,
     credentials: true,
   })
 );

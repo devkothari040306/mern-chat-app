@@ -7,6 +7,11 @@ const state = {
   socket: null,
 };
 
+const localHosts = ["localhost", "127.0.0.1"];
+const isLocalHost = localHosts.includes(window.location.hostname);
+const configuredApiUrl = window.CHAT_API_URL || "";
+const API_BASE_URL = isLocalHost ? "" : configuredApiUrl.replace(/\/$/, "");
+
 const els = {
   authView: document.querySelector("#authView"),
   chatView: document.querySelector("#chatView"),
@@ -31,7 +36,7 @@ const els = {
 };
 
 const api = async (path, options = {}) => {
-  const response = await fetch(path, {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -215,7 +220,7 @@ const connectSocket = () => {
     state.socket.disconnect();
   }
 
-  state.socket = io({
+  state.socket = io(API_BASE_URL || undefined, {
     auth: {
       token: state.token,
     },
