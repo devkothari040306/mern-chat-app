@@ -12,6 +12,7 @@ const isLocalHost = localHosts.includes(window.location.hostname);
 const configuredApiUrl = (window.CHAT_API_URL || "").replace(/\/$/, "");
 const isBackendPreview = isLocalHost && window.location.port === "5000";
 const API_BASE_URL = isBackendPreview ? "" : isLocalHost ? "http://localhost:5000" : configuredApiUrl;
+const resetToken = new URLSearchParams(window.location.search).get("resetToken");
 
 const els = {
   authView: document.querySelector("#authView"),
@@ -24,6 +25,11 @@ const els = {
   forgotEmail: document.querySelector("#forgotEmail"),
   forgotPasswordButton: document.querySelector("#forgotPasswordButton"),
   backToLogin: document.querySelector("#backToLogin"),
+  resetPasswordForm: document.querySelector("#resetPasswordForm"),
+  resetPassword: document.querySelector("#resetPassword"),
+  resetConfirmPassword: document.querySelector("#resetConfirmPassword"),
+  resetPasswordButton: document.querySelector("#resetPasswordButton"),
+  cancelResetPassword: document.querySelector("#cancelResetPassword"),
   rememberMe: document.querySelector("#rememberMe"),
   forgotPassword: document.querySelector("#forgotPassword"),
   registerAvatar: document.querySelector("#registerAvatar"),
@@ -153,6 +159,7 @@ const showLoginForm = () => {
   els.loginForm.classList.remove("hidden");
   els.registerForm.classList.add("hidden");
   els.forgotPasswordForm.classList.add("hidden");
+  els.resetPasswordForm.classList.add("hidden");
   setAuthMessage("");
 };
 
@@ -162,6 +169,7 @@ const showRegisterForm = () => {
   els.registerForm.classList.remove("hidden");
   els.loginForm.classList.add("hidden");
   els.forgotPasswordForm.classList.add("hidden");
+  els.resetPasswordForm.classList.add("hidden");
   setAuthMessage("");
 };
 
@@ -171,9 +179,27 @@ const showForgotPasswordForm = () => {
   els.loginForm.classList.add("hidden");
   els.registerForm.classList.add("hidden");
   els.forgotPasswordForm.classList.remove("hidden");
+  els.resetPasswordForm.classList.add("hidden");
   els.forgotEmail.value = document.querySelector("#loginEmail").value;
   els.forgotEmail.focus();
   setAuthMessage("");
+};
+
+const showResetPasswordForm = () => {
+  els.loginTab.classList.remove("active");
+  els.registerTab.classList.remove("active");
+  els.loginForm.classList.add("hidden");
+  els.registerForm.classList.add("hidden");
+  els.forgotPasswordForm.classList.add("hidden");
+  els.resetPasswordForm.classList.remove("hidden");
+  els.resetPassword.focus();
+  setAuthMessage("");
+};
+
+const clearResetTokenFromUrl = () => {
+  if (window.location.search.includes("resetToken=")) {
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
 };
 
 const renderAvatar = (target, user) => {
@@ -395,6 +421,11 @@ els.backToLogin.addEventListener("click", () => {
   showLoginForm();
 });
 
+els.cancelResetPassword.addEventListener("click", () => {
+  clearResetTokenFromUrl();
+  showLoginForm();
+});
+
 els.loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const button = document.querySelector("#loginButton");
@@ -439,6 +470,37 @@ els.forgotPasswordForm.addEventListener("submit", async (event) => {
     notify(error.message, "error");
   } finally {
     setButtonLoading(els.forgotPasswordButton, "Sending...", false);
+  }
+});
+
+els.resetPasswordForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  setButtonLoading(els.resetPasswordButton, "Updating...", true);
+  setAuthMessage("");
+
+  try {
+    if (els.resetPassword.value !== els.resetConfirmPassword.value) {
+      throw new Error("Passwords do not match");
+    }
+
+    const data = await api("/api/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify({
+        token: resetToken,
+        password: els.resetPassword.value,
+      }),
+    });
+
+    clearResetTokenFromUrl();
+    showLoginForm();
+    els.resetPasswordForm.reset();
+    setAuthMessage(data.message, true);
+    notify(data.message, "success");
+  } catch (error) {
+    setAuthMessage(error.message);
+    notify(error.message, "error");
+  } finally {
+    setButtonLoading(els.resetPasswordButton, "Updating...", false);
   }
 });
 
@@ -518,6 +580,12 @@ els.logoutButton.addEventListener("click", () => {
 });
 
 const boot = async () => {
+  if (resetToken) {
+    showAuth();
+    showResetPasswordForm();
+    return;
+  }
+
   if (!state.token) {
     showAuth();
     return;

@@ -66,6 +66,29 @@
             <button id="backToLogin" class="secondary-auth-button" type="button">Back to login</button>
           </form>
 
+          <form id="resetPasswordForm" class="auth-form recovery-form hidden">
+            <div>
+              <h2>Choose a new password</h2>
+              <p>Your reset link is valid for 15 minutes.</p>
+            </div>
+            <label>
+              New Password
+              <span class="password-control">
+                <input id="resetPassword" type="password" autocomplete="new-password" minlength="6" required />
+                <button class="password-toggle" type="button" data-toggle-password="resetPassword">Show</button>
+              </span>
+            </label>
+            <label>
+              Confirm New Password
+              <span class="password-control">
+                <input id="resetConfirmPassword" type="password" autocomplete="new-password" minlength="6" required />
+                <button class="password-toggle" type="button" data-toggle-password="resetConfirmPassword">Show</button>
+              </span>
+            </label>
+            <button id="resetPasswordButton" type="submit">Update Password</button>
+            <button id="cancelResetPassword" class="secondary-auth-button" type="button">Back to login</button>
+          </form>
+
           <form id="registerForm" class="auth-form hidden">
             <label>
               Name

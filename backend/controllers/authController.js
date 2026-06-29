@@ -1,5 +1,7 @@
+import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import { isMailerConfigured, sendPasswordResetEmail } from "../utils/mailer.js";
 import { isUserOnline } from "../socket/socket.js";
 
 const createToken = (userId) => {
@@ -16,6 +18,15 @@ const publicUser = (user) => ({
   createdAt: user.createdAt,
   updatedAt: user.updatedAt,
 });
+
+const getClientUrl = () => {
+  const firstClientUrl = (process.env.CLIENT_URL || process.env.FRONTEND_URL || "")
+    .split(",")
+    .map((url) => url.trim())
+    .filter(Boolean)[0];
+
+  return firstClientUrl || "http://localhost:5000";
+};
 
 export const register = async (req, res) => {
   try {
@@ -101,11 +112,32 @@ export const forgotPassword = async (req, res) => {
       });
     }
 
+    if (!isMailerConfigured()) {
+      return res.status(503).json({
+        success: false,
+        message: "Password reset email is not configured",
+      });
+    }
+
     const user = await User.findOne({ email });
 
-    if (user) {
-      console.log(`Password reset requested for ${user.email}`);
+    if (!user) {
+      return res.status(200).json({
+        success: true,
+        message: "If an account exists for that email, password reset instructions will be sent.",
+      });
     }
+
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    user.resetPasswordToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+    user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
+    await user.save({ validateBeforeSave: false });
+
+    const resetUrl = `${getClientUrl().replace(/\/$/, "")}/?resetToken=${resetToken}`;
+    await sendPasswordResetEmail({
+      to: user.email,
+      resetUrl,
+    });
 
     return res.status(200).json({
       success: true,
@@ -115,6 +147,55 @@ export const forgotPassword = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Could not process password reset request",
+      error: error.message,
+    });
+  }
+};
+
+export const resetPassword = async (req, res) => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Reset token and new password are required",
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 6 characters",
+      });
+    }
+
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpires: { $gt: Date.now() },
+    }).select("+resetPasswordToken +resetPasswordExpires");
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "Password reset link is invalid or expired",
+      });
+    }
+
+    user.password = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Password reset successful. You can now log in.",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Could not reset password",
       error: error.message,
     });
   }
