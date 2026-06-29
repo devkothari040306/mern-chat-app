@@ -52,14 +52,18 @@ const els = {
   messageArea: document.querySelector("#messageArea"),
   messageForm: document.querySelector("#messageForm"),
   messageInput: document.querySelector("#messageInput"),
+  attachmentInput: document.querySelector("#attachmentInput"),
+  attachmentButton: document.querySelector("#attachmentButton"),
+  attachmentPreview: document.querySelector("#attachmentPreview"),
   sendButton: document.querySelector("#sendButton"),
 };
 
 const api = async (path, options = {}) => {
+  const isFormData = options.body instanceof FormData;
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
       ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}),
       ...(options.headers || {}),
     },
@@ -111,6 +115,48 @@ const setButtonLoading = (button, loadingText, loading) => {
 
 const initials = (name = "?") => name.trim().charAt(0).toUpperCase() || "?";
 
+const formatFileSize = (bytes = 0) => {
+  if (!bytes) {
+    return "";
+  }
+
+  const units = ["B", "KB", "MB", "GB"];
+  const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+  const value = bytes / 1024 ** exponent;
+
+  return `${value.toFixed(value >= 10 || exponent === 0 ? 0 : 1)} ${units[exponent]}`;
+};
+
+const selectedAttachment = () => els.attachmentInput.files?.[0] || null;
+
+const clearAttachment = () => {
+  els.attachmentInput.value = "";
+  els.attachmentPreview.classList.add("hidden");
+  els.attachmentPreview.innerHTML = "";
+};
+
+const updateAttachmentPreview = () => {
+  const file = selectedAttachment();
+
+  if (!file) {
+    clearAttachment();
+    return;
+  }
+
+  els.attachmentPreview.classList.remove("hidden");
+  els.attachmentPreview.innerHTML = "";
+
+  const name = document.createElement("span");
+  name.textContent = `${file.name} ${formatFileSize(file.size)}`;
+
+  const remove = document.createElement("button");
+  remove.type = "button";
+  remove.textContent = "Remove";
+  remove.addEventListener("click", clearAttachment);
+
+  els.attachmentPreview.append(name, remove);
+};
+
 const saveToken = (token, remember = true) => {
   const storage = remember ? localStorage : sessionStorage;
   const otherStorage = remember ? sessionStorage : localStorage;
@@ -151,6 +197,40 @@ const updatePasswordStrength = () => {
   const strength = getPasswordStrength(els.registerPassword.value);
   els.passwordStrengthBar.className = strength.level;
   els.passwordStrengthText.textContent = strength.label;
+};
+
+const renderAttachment = (message) => {
+  if (!message.attachment?.url) {
+    return null;
+  }
+
+  const attachment = document.createElement("a");
+  attachment.className = "message-attachment";
+  attachment.href = message.attachment.url;
+  attachment.target = "_blank";
+  attachment.rel = "noopener";
+  attachment.download = message.attachment.originalName || true;
+
+  if (message.attachment.mimeType?.startsWith("image/")) {
+    const img = document.createElement("img");
+    img.src = message.attachment.url;
+    img.alt = message.attachment.originalName || "Shared image";
+    attachment.appendChild(img);
+  }
+
+  const details = document.createElement("span");
+  details.textContent = message.attachment.originalName || "Download attachment";
+
+  const size = formatFileSize(message.attachment.size);
+  if (size) {
+    const meta = document.createElement("small");
+    meta.textContent = size;
+    attachment.append(details, meta);
+  } else {
+    attachment.appendChild(details);
+  }
+
+  return attachment;
 };
 
 const showLoginForm = () => {
@@ -282,7 +362,17 @@ const renderMessages = () => {
     const isSent = String(message.sender._id || message.sender) === String(state.currentUser._id);
     const bubble = document.createElement("div");
     bubble.className = `bubble ${isSent ? "sent" : "received"}`;
-    bubble.textContent = message.text;
+
+    if (message.text) {
+      const text = document.createElement("span");
+      text.textContent = message.text;
+      bubble.appendChild(text);
+    }
+
+    const attachment = renderAttachment(message);
+    if (attachment) {
+      bubble.appendChild(attachment);
+    }
 
     const time = document.createElement("span");
     time.className = "bubble-time";
@@ -303,6 +393,7 @@ const updateActiveHeader = () => {
     els.emptyChatHeader.classList.remove("hidden");
     els.activeChatHeader.classList.add("hidden");
     els.messageInput.disabled = true;
+    els.attachmentButton.disabled = true;
     els.sendButton.disabled = true;
     return;
   }
@@ -313,6 +404,7 @@ const updateActiveHeader = () => {
   els.activeUserStatus.textContent = state.selectedUser.online ? "Online" : "Offline";
   renderAvatar(els.activeAvatar, state.selectedUser);
   els.messageInput.disabled = false;
+  els.attachmentButton.disabled = false;
   els.sendButton.disabled = false;
 };
 
@@ -327,6 +419,7 @@ const fetchUsers = async () => {
 const openChat = async (user) => {
   state.selectedUser = user;
   state.messages = [];
+  clearAttachment();
   updateActiveHeader();
   renderUsers();
   els.messageArea.innerHTML = '<div class="empty-state">Loading messages...</div>';
@@ -535,21 +628,30 @@ els.registerForm.addEventListener("submit", async (event) => {
 
 els.messageForm.addEventListener("submit", async (event) => {
   event.preventDefault();
+  const attachment = selectedAttachment();
+  const text = els.messageInput.value.trim();
 
-  if (!state.selectedUser || !els.messageInput.value.trim()) {
+  if (!state.selectedUser || (!text && !attachment)) {
     return;
   }
 
-  const text = els.messageInput.value.trim();
+  const formData = new FormData();
+  formData.append("text", text);
+
+  if (attachment) {
+    formData.append("attachment", attachment);
+  }
+
   els.messageInput.value = "";
   els.sendButton.disabled = true;
 
   try {
     const data = await api(`/api/messages/${state.selectedUser._id}`, {
       method: "POST",
-      body: JSON.stringify({ text }),
+      body: formData,
     });
     state.messages.push(data.data);
+    clearAttachment();
     renderMessages();
   } catch (error) {
     alert(error.message);
@@ -558,6 +660,22 @@ els.messageForm.addEventListener("submit", async (event) => {
     els.sendButton.disabled = false;
     els.messageInput.focus();
   }
+});
+
+els.attachmentButton.addEventListener("click", () => {
+  els.attachmentInput.click();
+});
+
+els.attachmentInput.addEventListener("change", () => {
+  const attachment = selectedAttachment();
+
+  if (attachment && attachment.size > 10 * 1024 * 1024) {
+    alert("Attachment must be 10 MB or smaller.");
+    clearAttachment();
+    return;
+  }
+
+  updateAttachmentPreview();
 });
 
 els.logoutButton.addEventListener("click", () => {
@@ -575,6 +693,7 @@ els.logoutButton.addEventListener("click", () => {
 
   updateActiveHeader();
   renderMessages();
+  clearAttachment();
   showAuth();
   notify("You have been logged out.", "info");
 });

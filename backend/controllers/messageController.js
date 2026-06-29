@@ -6,6 +6,21 @@ import { emitToUser } from "../socket/socket.js";
 
 const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
+const buildAttachment = (req) => {
+  if (!req.file) {
+    return undefined;
+  }
+
+  const protocol = req.get("x-forwarded-proto") || req.protocol;
+
+  return {
+    url: `${protocol}://${req.get("host")}/uploads/${req.file.filename}`,
+    originalName: req.file.originalname,
+    mimeType: req.file.mimetype,
+    size: req.file.size,
+  };
+};
+
 const getOrCreateConversation = async (currentUserId, otherUserId) => {
   let conversation = await Conversation.findOne({
     participants: { $all: [currentUserId, otherUserId], $size: 2 },
@@ -68,7 +83,8 @@ export const getMessages = async (req, res) => {
 export const sendMessage = async (req, res) => {
   try {
     const { userId } = req.params;
-    const { text } = req.body;
+    const text = (req.body.text || "").trim();
+    const attachment = buildAttachment(req);
 
     if (!isValidObjectId(userId)) {
       return res.status(400).json({
@@ -77,10 +93,10 @@ export const sendMessage = async (req, res) => {
       });
     }
 
-    if (!text || !text.trim()) {
+    if (!text && !attachment) {
       return res.status(400).json({
         success: false,
-        message: "Message text is required",
+        message: "Message text or attachment is required",
       });
     }
 
@@ -105,7 +121,8 @@ export const sendMessage = async (req, res) => {
       conversationId: conversation._id,
       sender: req.user._id,
       receiver: userId,
-      text: text.trim(),
+      text,
+      attachment,
     });
 
     conversation.lastMessage = message._id;

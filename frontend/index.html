@@ -165,6 +165,11 @@
           </div>
 
           <form id="messageForm" class="message-form">
+            <input id="attachmentInput" type="file" class="hidden" />
+            <button id="attachmentButton" class="icon-button" type="button" title="Attach file" aria-label="Attach file" disabled>
+              +
+            </button>
+            <div id="attachmentPreview" class="attachment-preview hidden"></div>
             <input
               id="messageInput"
               type="text"
