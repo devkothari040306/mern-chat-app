@@ -18,6 +18,12 @@
             </div>
           </div>
 
+          <div class="auth-highlights" aria-label="Chat app highlights">
+            <span>Live status</span>
+            <span>Private chats</span>
+            <span>Fast setup</span>
+          </div>
+
           <div class="tabs" role="tablist" aria-label="Authentication">
             <button id="loginTab" class="tab active" type="button">Login</button>
             <button id="registerTab" class="tab" type="button">Register</button>
@@ -30,8 +36,18 @@
             </label>
             <label>
               Password
-              <input id="loginPassword" type="password" autocomplete="current-password" required />
+              <span class="password-control">
+                <input id="loginPassword" type="password" autocomplete="current-password" required />
+                <button class="password-toggle" type="button" data-toggle-password="loginPassword">Show</button>
+              </span>
             </label>
+            <div class="form-row">
+              <label class="check-label">
+                <input id="rememberMe" type="checkbox" checked />
+                Keep me signed in
+              </label>
+              <button id="forgotPassword" class="link-button" type="button">Forgot password?</button>
+            </div>
             <button id="loginButton" type="submit">Login</button>
           </form>
 
@@ -48,9 +64,27 @@
               Avatar URL
               <input id="registerAvatar" type="url" placeholder="Optional" />
             </label>
+            <div class="avatar-preview-row">
+              <div id="registerAvatarPreview" class="avatar preview-avatar">?</div>
+              <span>Avatar preview</span>
+            </div>
             <label>
               Password
-              <input id="registerPassword" type="password" autocomplete="new-password" required />
+              <span class="password-control">
+                <input id="registerPassword" type="password" autocomplete="new-password" minlength="6" required />
+                <button class="password-toggle" type="button" data-toggle-password="registerPassword">Show</button>
+              </span>
+            </label>
+            <div class="password-meter" aria-live="polite">
+              <span id="passwordStrengthBar"></span>
+            </div>
+            <p id="passwordStrengthText" class="field-note">Use at least 6 characters with a mix of letters and numbers.</p>
+            <label>
+              Confirm Password
+              <span class="password-control">
+                <input id="registerConfirmPassword" type="password" autocomplete="new-password" minlength="6" required />
+                <button class="password-toggle" type="button" data-toggle-password="registerConfirmPassword">Show</button>
+              </span>
             </label>
             <button id="registerButton" type="submit">Create Account</button>
           </form>

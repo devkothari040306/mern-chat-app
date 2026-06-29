@@ -1,5 +1,5 @@
 const state = {
-  token: localStorage.getItem("chatToken"),
+  token: localStorage.getItem("chatToken") || sessionStorage.getItem("chatToken"),
   currentUser: null,
   selectedUser: null,
   users: [],
@@ -20,6 +20,14 @@ const els = {
   registerTab: document.querySelector("#registerTab"),
   loginForm: document.querySelector("#loginForm"),
   registerForm: document.querySelector("#registerForm"),
+  rememberMe: document.querySelector("#rememberMe"),
+  forgotPassword: document.querySelector("#forgotPassword"),
+  registerAvatar: document.querySelector("#registerAvatar"),
+  registerAvatarPreview: document.querySelector("#registerAvatarPreview"),
+  registerPassword: document.querySelector("#registerPassword"),
+  registerConfirmPassword: document.querySelector("#registerConfirmPassword"),
+  passwordStrengthBar: document.querySelector("#passwordStrengthBar"),
+  passwordStrengthText: document.querySelector("#passwordStrengthText"),
   authMessage: document.querySelector("#authMessage"),
   currentUserName: document.querySelector("#currentUserName"),
   logoutButton: document.querySelector("#logoutButton"),
@@ -77,6 +85,48 @@ const setButtonLoading = (button, loadingText, loading) => {
 };
 
 const initials = (name = "?") => name.trim().charAt(0).toUpperCase() || "?";
+
+const saveToken = (token, remember = true) => {
+  const storage = remember ? localStorage : sessionStorage;
+  const otherStorage = remember ? sessionStorage : localStorage;
+
+  storage.setItem("chatToken", token);
+  otherStorage.removeItem("chatToken");
+};
+
+const clearToken = () => {
+  localStorage.removeItem("chatToken");
+  sessionStorage.removeItem("chatToken");
+};
+
+const getPasswordStrength = (password) => {
+  let score = 0;
+
+  if (password.length >= 6) score += 1;
+  if (password.length >= 10) score += 1;
+  if (/[a-z]/i.test(password) && /\d/.test(password)) score += 1;
+  if (/[^a-z0-9]/i.test(password)) score += 1;
+
+  if (!password) {
+    return { label: "Use at least 6 characters with a mix of letters and numbers.", level: "empty" };
+  }
+
+  if (score <= 1) {
+    return { label: "Weak password", level: "weak" };
+  }
+
+  if (score <= 3) {
+    return { label: "Good password", level: "good" };
+  }
+
+  return { label: "Strong password", level: "strong" };
+};
+
+const updatePasswordStrength = () => {
+  const strength = getPasswordStrength(els.registerPassword.value);
+  els.passwordStrengthBar.className = strength.level;
+  els.passwordStrengthText.textContent = strength.label;
+};
 
 const renderAvatar = (target, user) => {
   target.textContent = initials(user.name);
@@ -264,11 +314,25 @@ const connectSocket = () => {
 const finishAuth = async (data) => {
   state.token = data.token;
   state.currentUser = data.user;
-  localStorage.setItem("chatToken", state.token);
+  saveToken(state.token, els.rememberMe.checked);
   showChat();
   connectSocket();
   await fetchUsers();
 };
+
+document.querySelectorAll("[data-toggle-password]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const input = document.querySelector(`#${button.dataset.togglePassword}`);
+    const shouldShow = input.type === "password";
+
+    input.type = shouldShow ? "text" : "password";
+    button.textContent = shouldShow ? "Hide" : "Show";
+  });
+});
+
+els.forgotPassword.addEventListener("click", () => {
+  setAuthMessage("Password reset is not available yet. Please create a new account or contact support.");
+});
 
 els.loginTab.addEventListener("click", () => {
   els.loginTab.classList.add("active");
@@ -315,6 +379,10 @@ els.registerForm.addEventListener("submit", async (event) => {
   setAuthMessage("");
 
   try {
+    if (els.registerPassword.value !== els.registerConfirmPassword.value) {
+      throw new Error("Passwords do not match");
+    }
+
     const data = await api("/api/auth/register", {
       method: "POST",
       body: JSON.stringify({
@@ -360,7 +428,7 @@ els.messageForm.addEventListener("submit", async (event) => {
 });
 
 els.logoutButton.addEventListener("click", () => {
-  localStorage.removeItem("chatToken");
+  clearToken();
   state.token = null;
   state.currentUser = null;
   state.selectedUser = null;
@@ -390,11 +458,28 @@ const boot = async () => {
     connectSocket();
     await fetchUsers();
   } catch (error) {
-    localStorage.removeItem("chatToken");
+    clearToken();
     state.token = null;
     showAuth();
     setAuthMessage("Please log in again.");
   }
 };
+
+els.registerAvatar.addEventListener("input", () => {
+  renderAvatar(els.registerAvatarPreview, {
+    name: document.querySelector("#registerName").value || "?",
+    avatar: els.registerAvatar.value.trim(),
+  });
+});
+
+document.querySelector("#registerName").addEventListener("input", () => {
+  renderAvatar(els.registerAvatarPreview, {
+    name: document.querySelector("#registerName").value || "?",
+    avatar: els.registerAvatar.value.trim(),
+  });
+});
+
+els.registerPassword.addEventListener("input", updatePasswordStrength);
+updatePasswordStrength();
 
 boot();
