@@ -15,6 +15,13 @@ const auth = async (req, res, next) => {
       });
     }
 
+    if (!process.env.JWT_SECRET) {
+      return res.status(503).json({
+        success: false,
+        message: "Authentication is not configured. Set JWT_SECRET on the backend.",
+      });
+    }
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id);
 

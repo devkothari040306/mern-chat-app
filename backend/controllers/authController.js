@@ -4,6 +4,11 @@ import User from "../models/User.js";
 import { isMailerConfigured, sendPasswordResetEmail } from "../utils/mailer.js";
 import { isUserOnline } from "../socket/socket.js";
 
+const jwtConfigError = () => ({
+  success: false,
+  message: "Authentication is not configured. Set JWT_SECRET on the backend.",
+});
+
 const createToken = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
     expiresIn: "7d",
@@ -37,6 +42,10 @@ export const register = async (req, res) => {
         success: false,
         message: "Name, email, and password are required",
       });
+    }
+
+    if (!process.env.JWT_SECRET) {
+      return res.status(503).json(jwtConfigError());
     }
 
     const existingUser = await User.findOne({ email });
@@ -74,6 +83,10 @@ export const login = async (req, res) => {
         success: false,
         message: "Email and password are required",
       });
+    }
+
+    if (!process.env.JWT_SECRET) {
+      return res.status(503).json(jwtConfigError());
     }
 
     const user = await User.findOne({ email }).select("+password");
