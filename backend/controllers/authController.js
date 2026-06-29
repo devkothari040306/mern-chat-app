@@ -134,10 +134,23 @@ export const forgotPassword = async (req, res) => {
     await user.save({ validateBeforeSave: false });
 
     const resetUrl = `${getClientUrl().replace(/\/$/, "")}/?resetToken=${resetToken}`;
-    await sendPasswordResetEmail({
-      to: user.email,
-      resetUrl,
-    });
+
+    try {
+      await sendPasswordResetEmail({
+        to: user.email,
+        resetUrl,
+      });
+    } catch (mailError) {
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpires = undefined;
+      await user.save({ validateBeforeSave: false });
+      console.error(`Password reset email failed: ${mailError.message}`);
+
+      return res.status(502).json({
+        success: false,
+        message: "Could not send reset email. Check Gmail app password settings.",
+      });
+    }
 
     return res.status(200).json({
       success: true,
