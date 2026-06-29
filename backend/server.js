@@ -34,12 +34,21 @@ const isLocalOrigin = (origin) => {
   }
 };
 
+const isVercelOrigin = (origin) => {
+  try {
+    const { hostname, protocol } = new URL(origin);
+    return protocol === "https:" && hostname.endsWith(".vercel.app");
+  } catch (error) {
+    return false;
+  }
+};
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const frontendPath = path.join(__dirname, "../frontend");
 
 const corsOrigin = (origin, callback) => {
-  if (!origin || allowedOrigins.has(origin) || isLocalOrigin(origin)) {
+  if (!origin || allowedOrigins.has(origin) || isLocalOrigin(origin) || isVercelOrigin(origin)) {
     return callback(null, true);
   }
 
