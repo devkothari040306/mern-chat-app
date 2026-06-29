@@ -40,7 +40,14 @@ const api = async (path, options = {}) => {
     },
   });
 
-  const data = await response.json();
+  const text = await response.text();
+  let data = {};
+
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch (error) {
+    data = { message: text || "Server returned an invalid response" };
+  }
 
   if (!response.ok) {
     throw new Error(data.message || "Request failed");
