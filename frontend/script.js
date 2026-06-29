@@ -20,6 +20,10 @@ const els = {
   registerTab: document.querySelector("#registerTab"),
   loginForm: document.querySelector("#loginForm"),
   registerForm: document.querySelector("#registerForm"),
+  forgotPasswordForm: document.querySelector("#forgotPasswordForm"),
+  forgotEmail: document.querySelector("#forgotEmail"),
+  forgotPasswordButton: document.querySelector("#forgotPasswordButton"),
+  backToLogin: document.querySelector("#backToLogin"),
   rememberMe: document.querySelector("#rememberMe"),
   forgotPassword: document.querySelector("#forgotPassword"),
   registerAvatar: document.querySelector("#registerAvatar"),
@@ -29,6 +33,7 @@ const els = {
   passwordStrengthBar: document.querySelector("#passwordStrengthBar"),
   passwordStrengthText: document.querySelector("#passwordStrengthText"),
   authMessage: document.querySelector("#authMessage"),
+  notificationStack: document.querySelector("#notificationStack"),
   currentUserName: document.querySelector("#currentUserName"),
   logoutButton: document.querySelector("#logoutButton"),
   userList: document.querySelector("#userList"),
@@ -73,6 +78,20 @@ const api = async (path, options = {}) => {
 const setAuthMessage = (message, success = false) => {
   els.authMessage.textContent = message;
   els.authMessage.classList.toggle("success", success);
+};
+
+const notify = (message, type = "info") => {
+  const notification = document.createElement("div");
+  notification.className = `notification ${type}`;
+  notification.setAttribute("role", "status");
+  notification.textContent = message;
+
+  els.notificationStack.appendChild(notification);
+
+  window.setTimeout(() => {
+    notification.classList.add("leaving");
+    window.setTimeout(() => notification.remove(), 220);
+  }, 4200);
 };
 
 const setButtonLoading = (button, loadingText, loading) => {
@@ -126,6 +145,35 @@ const updatePasswordStrength = () => {
   const strength = getPasswordStrength(els.registerPassword.value);
   els.passwordStrengthBar.className = strength.level;
   els.passwordStrengthText.textContent = strength.label;
+};
+
+const showLoginForm = () => {
+  els.loginTab.classList.add("active");
+  els.registerTab.classList.remove("active");
+  els.loginForm.classList.remove("hidden");
+  els.registerForm.classList.add("hidden");
+  els.forgotPasswordForm.classList.add("hidden");
+  setAuthMessage("");
+};
+
+const showRegisterForm = () => {
+  els.registerTab.classList.add("active");
+  els.loginTab.classList.remove("active");
+  els.registerForm.classList.remove("hidden");
+  els.loginForm.classList.add("hidden");
+  els.forgotPasswordForm.classList.add("hidden");
+  setAuthMessage("");
+};
+
+const showForgotPasswordForm = () => {
+  els.loginTab.classList.remove("active");
+  els.registerTab.classList.remove("active");
+  els.loginForm.classList.add("hidden");
+  els.registerForm.classList.add("hidden");
+  els.forgotPasswordForm.classList.remove("hidden");
+  els.forgotEmail.value = document.querySelector("#loginEmail").value;
+  els.forgotEmail.focus();
+  setAuthMessage("");
 };
 
 const renderAvatar = (target, user) => {
@@ -316,6 +364,7 @@ const finishAuth = async (data) => {
   state.currentUser = data.user;
   saveToken(state.token, els.rememberMe.checked);
   showChat();
+  notify(`Welcome, ${state.currentUser.name}`, "success");
   connectSocket();
   await fetchUsers();
 };
@@ -331,23 +380,19 @@ document.querySelectorAll("[data-toggle-password]").forEach((button) => {
 });
 
 els.forgotPassword.addEventListener("click", () => {
-  setAuthMessage("Password reset is not available yet. Please create a new account or contact support.");
+  showForgotPasswordForm();
 });
 
 els.loginTab.addEventListener("click", () => {
-  els.loginTab.classList.add("active");
-  els.registerTab.classList.remove("active");
-  els.loginForm.classList.remove("hidden");
-  els.registerForm.classList.add("hidden");
-  setAuthMessage("");
+  showLoginForm();
 });
 
 els.registerTab.addEventListener("click", () => {
-  els.registerTab.classList.add("active");
-  els.loginTab.classList.remove("active");
-  els.registerForm.classList.remove("hidden");
-  els.loginForm.classList.add("hidden");
-  setAuthMessage("");
+  showRegisterForm();
+});
+
+els.backToLogin.addEventListener("click", () => {
+  showLoginForm();
 });
 
 els.loginForm.addEventListener("submit", async (event) => {
@@ -367,8 +412,33 @@ els.loginForm.addEventListener("submit", async (event) => {
     await finishAuth(data);
   } catch (error) {
     setAuthMessage(error.message);
+    notify(error.message, "error");
   } finally {
     setButtonLoading(button, "Logging in...", false);
+  }
+});
+
+els.forgotPasswordForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  setButtonLoading(els.forgotPasswordButton, "Sending...", true);
+  setAuthMessage("");
+
+  try {
+    const data = await api("/api/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({
+        email: els.forgotEmail.value,
+      }),
+    });
+
+    showLoginForm();
+    setAuthMessage(data.message, true);
+    notify(data.message, "success");
+  } catch (error) {
+    setAuthMessage(error.message);
+    notify(error.message, "error");
+  } finally {
+    setButtonLoading(els.forgotPasswordButton, "Sending...", false);
   }
 });
 
@@ -395,6 +465,7 @@ els.registerForm.addEventListener("submit", async (event) => {
     await finishAuth(data);
   } catch (error) {
     setAuthMessage(error.message);
+    notify(error.message, "error");
   } finally {
     setButtonLoading(button, "Creating...", false);
   }
@@ -443,6 +514,7 @@ els.logoutButton.addEventListener("click", () => {
   updateActiveHeader();
   renderMessages();
   showAuth();
+  notify("You have been logged out.", "info");
 });
 
 const boot = async () => {
@@ -462,6 +534,7 @@ const boot = async () => {
     state.token = null;
     showAuth();
     setAuthMessage("Please log in again.");
+    notify("Your session expired. Please log in again.", "info");
   }
 };
 

@@ -90,6 +90,36 @@ export const login = async (req, res) => {
   }
 };
 
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (user) {
+      console.log(`Password reset requested for ${user.email}`);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "If an account exists for that email, password reset instructions will be sent.",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Could not process password reset request",
+      error: error.message,
+    });
+  }
+};
+
 export const me = async (req, res) => {
   return res.status(200).json({
     success: true,

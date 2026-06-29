@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
+    <div id="notificationStack" class="notification-stack" aria-live="polite" aria-atomic="true"></div>
+
     <main class="app">
       <section id="authView" class="auth-view">
         <div class="auth-panel">
@@ -49,6 +51,19 @@
               <button id="forgotPassword" class="link-button" type="button">Forgot password?</button>
             </div>
             <button id="loginButton" type="submit">Login</button>
+          </form>
+
+          <form id="forgotPasswordForm" class="auth-form recovery-form hidden">
+            <div>
+              <h2>Reset your password</h2>
+              <p>Enter your email and we will send reset instructions if the account exists.</p>
+            </div>
+            <label>
+              Email
+              <input id="forgotEmail" type="email" autocomplete="email" required />
+            </label>
+            <button id="forgotPasswordButton" type="submit">Send Reset Instructions</button>
+            <button id="backToLogin" class="secondary-auth-button" type="button">Back to login</button>
           </form>
 
           <form id="registerForm" class="auth-form hidden">

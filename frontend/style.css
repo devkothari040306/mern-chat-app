@@ -50,6 +50,55 @@ input:focus-visible {
   min-height: 100vh;
 }
 
+.notification-stack {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 20;
+  display: grid;
+  gap: 10px;
+  width: min(360px, calc(100vw - 32px));
+}
+
+.notification {
+  padding: 13px 14px;
+  color: var(--text);
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--primary);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  font-size: 14px;
+  font-weight: 700;
+  animation: slideIn 180ms ease;
+}
+
+.notification.success {
+  border-left-color: var(--success);
+}
+
+.notification.error {
+  border-left-color: var(--danger);
+}
+
+.notification.leaving {
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .auth-view {
   min-height: 100vh;
   display: grid;
@@ -292,6 +341,36 @@ input:focus {
   font-weight: 600;
 }
 
+.recovery-form h2,
+.recovery-form p {
+  margin: 0;
+}
+
+.recovery-form h2 {
+  color: var(--text);
+  font-size: 20px;
+}
+
+.recovery-form p {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.secondary-auth-button {
+  min-height: 42px;
+  color: var(--text);
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-weight: 800;
+}
+
+.secondary-auth-button:hover {
+  background: #eef2f7;
+}
+
 .auth-form > button,
 .message-form button {
   min-height: 44px;
@@ -522,6 +601,12 @@ input:disabled {
 }
 
 @media (max-width: 520px) {
+  .notification-stack {
+    top: 12px;
+    right: 12px;
+    width: calc(100vw - 24px);
+  }
+
   .auth-view {
     padding: 16px;
   }
