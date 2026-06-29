@@ -49,9 +49,10 @@ Create `backend/.env`:
 
 ```env
 PORT=5000
-MONGODB_URI=your-mongodb-connection-string
-JWT_SECRET=your-long-random-secret
-CLIENT_URL=http://localhost:5000
+MONGO_URI=mongodb+srv://devdatabase:devdatabase@chat-app.dvqcgpv.mongodb.net/chatapp?retryWrites=true&w=majority&appName=Chat-App
+JWT_SECRET=devkothari_super_secret_key_2025
+NODE_ENV=development
+FRONTEND_URL=http://localhost:5173
 GMAIL_USER=your-gmail-address@gmail.com
 GMAIL_APP_PASSWORD=your-google-app-password
 MAIL_FROM="Chat App <your-gmail-address@gmail.com>"
@@ -123,7 +124,7 @@ backend/uploads/
 
 This folder is ignored by Git.
 
-Important production note: Render filesystem storage is not permanent. Uploaded files can disappear after a redeploy or restart. For production-ready persistent attachments, use Cloudinary, AWS S3, Firebase Storage, or another file storage service.
+
 
 ## Deployment
 
@@ -136,9 +137,11 @@ The root `vercel.json` routes the Vercel deployment to the static frontend files
 Set these environment variables in the Render backend service:
 
 ```env
-MONGODB_URI=your-mongodb-connection-string
-JWT_SECRET=your-long-random-secret
-CLIENT_URL=https://your-vercel-app.vercel.app
+PORT=5000
+MONGO_URI=mongodb+srv://devdatabase:devdatabase@chat-app.dvqcgpv.mongodb.net/chatapp?retryWrites=true&w=majority&appName=Chat-App
+JWT_SECRET=devkothari_super_secret_key_2025
+NODE_ENV=development
+FRONTEND_URL=http://localhost:5173
 GMAIL_USER=your-gmail-address@gmail.com
 GMAIL_APP_PASSWORD=your-google-app-password
 MAIL_FROM="Chat App <your-gmail-address@gmail.com>"
