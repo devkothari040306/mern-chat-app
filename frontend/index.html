@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Real-Time Chat</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="app">
+      <section id="authView" class="auth-view">
+        <div class="auth-panel">
+          <div class="brand">
+            <div class="brand-mark">C</div>
+            <div>
+              <h1>Chat App</h1>
+              <p>Sign in to message your contacts in real time.</p>
+            </div>
+          </div>
+
+          <div class="tabs" role="tablist" aria-label="Authentication">
+            <button id="loginTab" class="tab active" type="button">Login</button>
+            <button id="registerTab" class="tab" type="button">Register</button>
+          </div>
+
+          <form id="loginForm" class="auth-form">
+            <label>
+              Email
+              <input id="loginEmail" type="email" autocomplete="email" required />
+            </label>
+            <label>
+              Password
+              <input id="loginPassword" type="password" autocomplete="current-password" required />
+            </label>
+            <button id="loginButton" type="submit">Login</button>
+          </form>
+
+          <form id="registerForm" class="auth-form hidden">
+            <label>
+              Name
+              <input id="registerName" type="text" autocomplete="name" required />
+            </label>
+            <label>
+              Email
+              <input id="registerEmail" type="email" autocomplete="email" required />
+            </label>
+            <label>
+              Avatar URL
+              <input id="registerAvatar" type="url" placeholder="Optional" />
+            </label>
+            <label>
+              Password
+              <input id="registerPassword" type="password" autocomplete="new-password" required />
+            </label>
+            <button id="registerButton" type="submit">Create Account</button>
+          </form>
+
+          <p id="authMessage" class="message" role="status"></p>
+        </div>
+      </section>
+
+      <section id="chatView" class="chat-view hidden">
+        <aside class="sidebar">
+          <header class="sidebar-header">
+            <div>
+              <p class="eyebrow">Signed in as</p>
+              <h2 id="currentUserName">User</h2>
+            </div>
+            <button id="logoutButton" class="secondary-button" type="button">Logout</button>
+          </header>
+
+          <div id="userListMessage" class="list-message">Loading users...</div>
+          <div id="userList" class="user-list" aria-label="Users"></div>
+        </aside>
+
+        <section class="conversation">
+          <header class="conversation-header">
+            <div id="emptyChatHeader">
+              <h2>Select a user</h2>
+              <p>Choose someone from the list to start chatting.</p>
+            </div>
+            <div id="activeChatHeader" class="active-chat hidden">
+              <div id="activeAvatar" class="avatar">?</div>
+              <div>
+                <h2 id="activeUserName"></h2>
+                <p id="activeUserStatus"></p>
+              </div>
+            </div>
+          </header>
+
+          <div id="messageArea" class="message-area">
+            <div class="empty-state">Your conversation will appear here.</div>
+          </div>
+
+          <form id="messageForm" class="message-form">
+            <input
+              id="messageInput"
+              type="text"
+              placeholder="Type a message"
+              autocomplete="off"
+              disabled
+            />
+            <button id="sendButton" type="submit" disabled>Send</button>
+          </form>
+        </section>
+      </section>
+    </main>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>
